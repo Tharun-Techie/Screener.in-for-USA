@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, TrendingUp, Download, Link as LinkIcon } from 'lucide-react';
+import { Search, TrendingUp, Download, Link as LinkIcon, Home, BarChart2, Briefcase, UserPlus } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
 function App() {
-  const [ticker, setTicker] = useState('AAPL');
+  const [ticker, setTicker] = useState<string>('');
   const [searchInput, setSearchInput] = useState('');
   
   const [summary, setSummary] = useState<any>(null);
@@ -17,8 +17,10 @@ function App() {
   const [error, setError] = useState('');
 
   const fetchStockData = async (symbol: string) => {
+    if (!symbol) return;
     setLoading(true);
     setError('');
+    setTicker(symbol.toUpperCase());
     try {
       const summaryRes = await fetch(`${API_BASE_URL}/stock/${symbol}/summary`);
       if (!summaryRes.ok) throw new Error('Stock not found or API error');
@@ -34,23 +36,27 @@ function App() {
       const peersRes = await fetch(`${API_BASE_URL}/stock/${symbol}/peers`);
       if (peersRes.ok) setPeers(await peersRes.json());
       
-      setTicker(symbol.toUpperCase());
     } catch (err: any) {
       setError(err.message || 'Failed to fetch data');
+      setSummary(null); // Return to home view with error
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchStockData('AAPL');
-  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchInput.trim()) {
       fetchStockData(searchInput.trim().toUpperCase());
     }
+  };
+
+  const goHome = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setTicker('');
+    setSummary(null);
+    setSearchInput('');
+    setError('');
   };
 
   const formatNumber = (num: number | null | undefined, isCurrency = false) => {
@@ -60,37 +66,101 @@ function App() {
     return `${isCurrency ? '$' : ''}${num.toFixed(2)}`;
   };
 
+  // If there's no summary and not loading, we show the Home Page
+  const isHome = !summary && !loading;
+
   return (
     <>
-      <header className="navbar">
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <a href="/" className="logo">
-            <TrendingUp color="var(--primary-color)" /> Screener Clone
-          </a>
-          
-          <form className="search-bar" onSubmit={handleSearch}>
-            <Search size={18} color="var(--text-muted)" />
-            <input 
-              type="text" 
-              placeholder="Search for a company (e.g., AAPL, TSLA)" 
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
-          </form>
-          
-          <div style={{ fontSize: '14px' }}>
-            <a href="#" style={{ margin: '0 10px', textDecoration: 'none', color: 'var(--text-main)' }}>Screens</a>
-            <a href="#" style={{ margin: '0 10px', textDecoration: 'none', color: 'var(--text-main)' }}>Tools</a>
+      <nav className="u-full-width top-nav-holder">
+        <div className="container">
+          <div className="layer-holder top-navigation">
+            <div className="layer flex flex-space-between flex-align-center" style={{ height: '50px' }}>
+              <div className="flex flex-align-center">
+                <a href="/" onClick={goHome} className="logo-text">
+                  <TrendingUp color="var(--primary-color)" /> Screener Clone
+                </a>
+
+                <div className="desktop-links">
+                  <a href="/" onClick={goHome}>Home</a>
+                  <a href="#">Screens</a>
+                  <button className="button-plain">Tools ▾</button>
+                </div>
+              </div>
+
+              {!isHome && (
+                <div className="flex flex-gap-16 flex-align-center">
+                  <form className="nav-search" onSubmit={handleSearch}>
+                    <Search size={16} color="var(--text-muted)" />
+                    <input 
+                      type="text" 
+                      placeholder="Search for a company" 
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                    />
+                  </form>
+                  <div className="flex flex-gap-8" style={{ margin: '4px' }}>
+                    <a className="button" href="#">Login</a>
+                    <a className="button button-secondary" href="#">Get free account</a>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="container main-content">
-        {loading ? (
+      <main className="flex-grow container main-content">
+        {loading && (
           <div style={{ textAlign: 'center', padding: '50px' }}>Loading data...</div>
-        ) : error ? (
-          <div style={{ color: 'red', textAlign: 'center', padding: '50px' }}>{error}</div>
-        ) : summary ? (
+        )}
+
+        {isHome && (
+          <div className="flex flex-column" style={{ maxWidth: '650px', margin: '96px auto', minHeight: '60vh', textAlign: 'center', justifyContent: 'center', padding: '16px' }}>
+            <h1 style={{ marginBottom: '0' }}>
+              <a href="/" onClick={goHome} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                <TrendingUp size={48} color="var(--primary-color)" />
+                <span style={{ fontSize: '3rem', fontWeight: 700 }}>Screener Clone</span>
+              </a>
+            </h1>
+
+            <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', marginTop: '10px' }}>
+              Stock analysis and screening tool for investors in the USA.
+            </p>
+
+            <div style={{ marginTop: '3%' }}>
+              <form className="home-search" style={{ marginBottom: '1.5rem' }} onSubmit={handleSearch}>
+                <i className="addon">
+                  <Search size={24} />
+                </i>
+                <input 
+                  aria-label="Search for a company" 
+                  type="search" 
+                  autoComplete="off" 
+                  spellCheck="false" 
+                  placeholder="Search for a company" 
+                  autoFocus 
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </form>
+              
+              {error && (
+                 <div style={{ color: 'red', marginBottom: '15px' }}>{error}</div>
+              )}
+
+              <p className="suggestions">
+                Or analyse:
+                {['AAPL', 'MSFT', 'TSLA', 'GOOGL', 'AMZN', 'NVDA', 'META', 'NFLX', 'INTC', 'AMD'].map(sym => (
+                  <a key={sym} className="button" href={`#${sym}`} onClick={(e) => { e.preventDefault(); setSearchInput(sym); fetchStockData(sym); }}>
+                    {sym}
+                  </a>
+                ))}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!isHome && summary && (
           <>
             <div>
               <h1 className="company-title">{summary.name}</h1>
@@ -180,9 +250,9 @@ function App() {
                       <tr>
                         <th>S.No.</th>
                         <th>Name</th>
-                        <th>CMP Rs.</th>
+                        <th>CMP $</th>
                         <th>P/E</th>
-                        <th>Mar Cap Rs.Cr.</th>
+                        <th>Mar Cap $</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -213,11 +283,37 @@ function App() {
             )}
 
           </>
-        ) : null}
+        )}
       </main>
 
-      <footer className="footer">
-        <p>Data provided by Yahoo Finance. Not for commercial use.</p>
+      <footer>
+        <div className="container footer-content">
+          <div className="footer-logo-section">
+            <a href="/" onClick={goHome} className="logo-text" style={{ marginBottom: '16px' }}>
+              <TrendingUp color="var(--primary-color)" /> Screener Clone
+            </a>
+            <p style={{ fontWeight: 500 }}>Stock analysis and screening tool</p>
+            <p className="sub">USA clone © 2026</p>
+            <p className="sub" style={{ fontSize: '13px' }}>Data provided by Yahoo Finance</p>
+          </div>
+          <div className="footer-links-section">
+            <div>
+              <div className="title">Product</div>
+              <ul>
+                <li><a href="#">Premium</a></li>
+                <li><a href="#">What's new?</a></li>
+                <li><a href="#">Learn</a></li>
+              </ul>
+            </div>
+            <div>
+              <div className="title">Team</div>
+              <ul>
+                <li><a href="#">About us</a></li>
+                <li><a href="#">Support</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </footer>
     </>
   );
@@ -225,17 +321,14 @@ function App() {
 
 // Helper to render complex dicts as tables
 function FinancialTable({ data }: { data: any }) {
-  // data is { "Total Revenue": { "2023-12-31": 1000, "2022-12-31": 800 }, ... }
   const rows = Object.keys(data);
   if (rows.length === 0) return null;
   
-  // Extract columns (dates)
   const allDates = new Set<string>();
   rows.forEach(row => {
     Object.keys(data[row]).forEach(d => allDates.add(d));
   });
   
-  // Sort dates descending
   const columns = Array.from(allDates).sort((a, b) => b.localeCompare(a));
 
   return (
@@ -252,7 +345,6 @@ function FinancialTable({ data }: { data: any }) {
             <td>{row}</td>
             {columns.map(c => {
               const val = data[row][c];
-              // Format large numbers simply
               let formatted = '-';
               if (val !== undefined && val !== null && val !== 0) {
                  if (Math.abs(val) > 1e6) {
