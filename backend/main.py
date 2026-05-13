@@ -16,12 +16,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Set up requests_cache to avoid hitting Yahoo Finance limits too quickly
-session = requests_cache.CachedSession('yfinance.cache')
-session.headers['User-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-
+# Using default yfinance session since custom requests block curl_cffi bypass
 def get_ticker(symbol: str):
-    return yf.Ticker(symbol, session=session)
+    return yf.Ticker(symbol)
 
 @app.get("/api/stock/{symbol}/summary")
 def get_summary(symbol: str):
