@@ -116,7 +116,7 @@ def get_peers(symbol: str):
         # We can mock this by returning related top tech companies for demo purposes
         # Or if we have a way to fetch by sector...
         # For this clone, we will return a static list if it's a known stock, or empty.
-        mock_peers = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA"]
+        mock_peers = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA","STT"]
         if symbol not in mock_peers:
             mock_peers.insert(0, symbol)
         
