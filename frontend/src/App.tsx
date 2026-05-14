@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, TrendingUp, Download, Link as LinkIcon, Home, BarChart2, Briefcase, UserPlus } from 'lucide-react';
-import { createChart, ColorType, BarSeries } from 'lightweight-charts';
+import { createChart, ColorType, BarSeries, LineSeries, CandlestickSeries } from 'lightweight-charts';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -357,6 +357,7 @@ function FinancialTable({ data }: { data: any }) {
 // Lightweight Charts Component
 function LightweightChart({ data }: { data: any[] }) {
   const chartContainerRef = React.useRef<HTMLDivElement>(null);
+  const [chartType, setChartType] = React.useState<'line' | 'bar' | 'candlestick'>('bar');
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -386,22 +387,38 @@ function LightweightChart({ data }: { data: any[] }) {
       },
     });
 
-    const barSeries = chart.addSeries(BarSeries, {
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-    });
+    let series: any;
+    if (chartType === 'bar') {
+      series = chart.addSeries(BarSeries, { upColor: '#26a69a', downColor: '#ef5350' });
+    } else if (chartType === 'candlestick') {
+      series = chart.addSeries(CandlestickSeries, { 
+        upColor: '#26a69a', 
+        downColor: '#ef5350', 
+        borderVisible: false, 
+        wickUpColor: '#26a69a', 
+        wickDownColor: '#ef5350' 
+      });
+    } else {
+      series = chart.addSeries(LineSeries, { color: '#2962FF', lineWidth: 2 });
+    }
 
     // Ensure data is sorted by time and formatted correctly
     // Added fallback to d.date and d.price in case the old API response is cached
-    const formattedData = data.map(d => ({
-      time: d.time || d.date,
-      open: d.open !== undefined ? d.open : d.price,
-      high: d.high !== undefined ? d.high : d.price,
-      low: d.low !== undefined ? d.low : d.price,
-      close: d.close !== undefined ? d.close : d.price,
-    })).sort((a, b) => new Date(a.time || a.date).getTime() - new Date(b.time || b.date).getTime());
+    const formattedData = data.map(d => {
+      const t = d.time || d.date;
+      if (chartType === 'line') {
+        return { time: t, value: d.close !== undefined ? d.close : d.price };
+      }
+      return {
+        time: t,
+        open: d.open !== undefined ? d.open : d.price,
+        high: d.high !== undefined ? d.high : d.price,
+        low: d.low !== undefined ? d.low : d.price,
+        close: d.close !== undefined ? d.close : d.price,
+      };
+    }).sort((a, b) => new Date(a.time as string).getTime() - new Date(b.time as string).getTime());
 
-    barSeries.setData(formattedData);
+    series.setData(formattedData);
 
     window.addEventListener('resize', handleResize);
 
@@ -409,9 +426,30 @@ function LightweightChart({ data }: { data: any[] }) {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [data]);
+  }, [data, chartType]);
 
-  return <div ref={chartContainerRef} style={{ width: '100%', height: '400px' }} />;
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', justifyContent: 'flex-end' }}>
+        <button 
+          className={`button ${chartType === 'line' ? '' : 'button-secondary'}`} 
+          style={{ padding: '4px 12px', minWidth: 'auto', height: 'auto', lineHeight: 'normal' }} 
+          onClick={() => setChartType('line')}
+        >Line</button>
+        <button 
+          className={`button ${chartType === 'candlestick' ? '' : 'button-secondary'}`} 
+          style={{ padding: '4px 12px', minWidth: 'auto', height: 'auto', lineHeight: 'normal' }} 
+          onClick={() => setChartType('candlestick')}
+        >Candles</button>
+        <button 
+          className={`button ${chartType === 'bar' ? '' : 'button-secondary'}`} 
+          style={{ padding: '4px 12px', minWidth: 'auto', height: 'auto', lineHeight: 'normal' }} 
+          onClick={() => setChartType('bar')}
+        >Bars</button>
+      </div>
+      <div ref={chartContainerRef} style={{ width: '100%', height: '400px' }} />
+    </div>
+  );
 }
 
 export default App;
