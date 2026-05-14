@@ -1,11 +1,12 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import yfinance as yf
-import requests_cache
 import pandas as pd
 import json
+from database import init_db, get_cached, set_cache
 
 app = FastAPI(title="Screener Clone API")
+init_db()
 
 # Configure CORS for frontend access
 app.add_middleware(
@@ -22,13 +23,18 @@ def get_ticker(symbol: str):
 
 @app.get("/api/stock/{symbol}/summary")
 def get_summary(symbol: str):
+    cache_key = f"summary_{symbol}"
+    cached_data = get_cached(cache_key)
+    if cached_data:
+        return cached_data
+
     try:
         ticker = get_ticker(symbol)
         
         # Use fast_info to avoid Yahoo Finance rate limits which cause hanging
         info = ticker.fast_info
         
-        return {
+        result = {
             "name": symbol,
             "symbol": symbol,
             "currentPrice": getattr(info, 'last_price', None),
@@ -46,11 +52,18 @@ def get_summary(symbol: str):
             "description": "Information not available due to API rate limits.",
             "website": f"https://finance.yahoo.com/quote/{symbol}"
         }
+        set_cache(cache_key, result)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/stock/{symbol}/chart")
 def get_chart(symbol: str, period: str = "1y"):
+    cache_key = f"chart_{symbol}_{period}"
+    cached_data = get_cached(cache_key)
+    if cached_data:
+        return cached_data
+
     try:
         ticker = get_ticker(symbol)
         hist = ticker.history(period=period)
@@ -78,12 +91,18 @@ def get_chart(symbol: str, period: str = "1y"):
                 "close": round(row['Close'], 2),
                 "value": round(row['Close'], 2) # keep value for fallback
             })
+        set_cache(cache_key, chart_data)
         return chart_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/stock/{symbol}/financials")
 def get_financials(symbol: str):
+    cache_key = f"financials_{symbol}"
+    cached_data = get_cached(cache_key)
+    if cached_data:
+        return cached_data
+
     try:
         ticker = get_ticker(symbol)
         
@@ -101,16 +120,23 @@ def get_financials(symbol: str):
         balance_sheet = safe_to_dict(ticker.balance_sheet)
         cash_flow = safe_to_dict(ticker.cashflow)
         
-        return {
+        result = {
             "incomeStatement": income_stmt,
             "balanceSheet": balance_sheet,
             "cashFlow": cash_flow
         }
+        set_cache(cache_key, result)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/stock/{symbol}/peers")
 def get_peers(symbol: str):
+    cache_key = f"peers_{symbol}"
+    cached_data = get_cached(cache_key)
+    if cached_data:
+        return cached_data
+
     try:
         ticker = get_ticker(symbol)
         
@@ -133,6 +159,8 @@ def get_peers(symbol: str):
                 })
             except:
                 pass
+        
+        set_cache(cache_key, peers_data)
         return peers_data
     except Exception as e:
          raise HTTPException(status_code=500, detail=str(e))
