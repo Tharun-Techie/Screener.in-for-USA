@@ -29,18 +29,19 @@ function App() {
     setError('');
     setTicker(symbol.toUpperCase());
     try {
-      const summaryRes = await fetch(`${API_BASE_URL}/stock/${symbol}/summary`);
+      const timestamp = Date.now();
+      const summaryRes = await fetch(`${API_BASE_URL}/stock/${symbol}/summary?t=${timestamp}`);
       if (!summaryRes.ok) throw new Error('Stock not found or API error');
       const summaryData = await summaryRes.json();
       setSummary(summaryData);
 
-      const chartRes = await fetch(`${API_BASE_URL}/stock/${symbol}/chart`);
+      const chartRes = await fetch(`${API_BASE_URL}/stock/${symbol}/chart?t=${timestamp}`);
       if (chartRes.ok) setChartData(await chartRes.json());
 
-      const finRes = await fetch(`${API_BASE_URL}/stock/${symbol}/financials`);
+      const finRes = await fetch(`${API_BASE_URL}/stock/${symbol}/financials?t=${timestamp}`);
       if (finRes.ok) setFinancials(await finRes.json());
 
-      const peersRes = await fetch(`${API_BASE_URL}/stock/${symbol}/peers`);
+      const peersRes = await fetch(`${API_BASE_URL}/stock/${symbol}/peers?t=${timestamp}`);
       if (peersRes.ok) setPeers(await peersRes.json());
       
     } catch (err: any) {
