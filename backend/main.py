@@ -71,8 +71,12 @@ def get_chart(symbol: str, period: str = "1y"):
         chart_data = []
         for _, row in hist.iterrows():
             chart_data.append({
-                "date": row['formatted_date'],
-                "price": round(row['Close'], 2)
+                "time": row['formatted_date'], # lightweight-charts uses 'time'
+                "open": round(row['Open'], 2),
+                "high": round(row['High'], 2),
+                "low": round(row['Low'], 2),
+                "close": round(row['Close'], 2),
+                "value": round(row['Close'], 2) # keep value for fallback
             })
         return chart_data
     except Exception as e:
