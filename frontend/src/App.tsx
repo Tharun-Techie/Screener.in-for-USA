@@ -392,13 +392,14 @@ function LightweightChart({ data }: { data: any[] }) {
     });
 
     // Ensure data is sorted by time and formatted correctly
+    // Added fallback to d.date and d.price in case the old API response is cached
     const formattedData = data.map(d => ({
-      time: d.time,
-      open: d.open,
-      high: d.high,
-      low: d.low,
-      close: d.close,
-    })).sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+      time: d.time || d.date,
+      open: d.open !== undefined ? d.open : d.price,
+      high: d.high !== undefined ? d.high : d.price,
+      low: d.low !== undefined ? d.low : d.price,
+      close: d.close !== undefined ? d.close : d.price,
+    })).sort((a, b) => new Date(a.time || a.date).getTime() - new Date(b.time || b.date).getTime());
 
     barSeries.setData(formattedData);
 
