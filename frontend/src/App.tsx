@@ -352,6 +352,8 @@ function FinancialTable({ data }: { data: any }) {
       </tbody>
     </table>
   );
+}
+
 // Lightweight Charts Component
 function LightweightChart({ data }: { data: any[] }) {
   const chartContainerRef = React.useRef<HTMLDivElement>(null);
