@@ -1,4 +1,4 @@
-# Screener.in for USA 🇺🇸📈
+# Screener.in for USA📈
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?logo=react)
