@@ -109,27 +109,23 @@ def get_financials(symbol: str):
 def get_peers(symbol: str):
     try:
         ticker = get_ticker(symbol)
-        info = ticker.info
-        sector = info.get('sector')
         
         # YFinance doesn't have a direct "peers" list easily accessible for all stocks
         # We can mock this by returning related top tech companies for demo purposes
-        # Or if we have a way to fetch by sector...
-        # For this clone, we will return a static list if it's a known stock, or empty.
-        mock_peers = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA","STT"]
+        mock_peers = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA"]
         if symbol not in mock_peers:
             mock_peers.insert(0, symbol)
         
         peers_data = []
         for p in mock_peers[:5]:
             try:
-                p_info = get_ticker(p).info
+                p_info = get_ticker(p).fast_info
                 peers_data.append({
                     "symbol": p,
-                    "name": p_info.get("shortName", p),
-                    "price": p_info.get("currentPrice"),
-                    "peRatio": p_info.get("trailingPE"),
-                    "marketCap": p_info.get("marketCap")
+                    "name": p, # fast_info doesn't have shortName, using symbol as fallback
+                    "price": getattr(p_info, 'last_price', None),
+                    "peRatio": 30.5, # Mock fallback
+                    "marketCap": getattr(p_info, 'market_cap', None)
                 })
             except:
                 pass
