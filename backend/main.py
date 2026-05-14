@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import yfinance as yf
 import pandas as pd
 import json
-from database import init_db, get_cached, set_cache
+from database import init_db, get_cached, set_cache, log_successful_search, get_symbol_suggestions
 
 app = FastAPI(title="Screener Clone API")
 init_db()
@@ -37,6 +37,7 @@ def get_summary(symbol: str):
         pass
         
     if cached_data:
+        log_successful_search(symbol)
         if live_price:
             cached_data["currentPrice"] = live_price
             cached_data["marketCap"] = market_cap
@@ -63,9 +64,17 @@ def get_summary(symbol: str):
             "website": f"https://finance.yahoo.com/quote/{symbol}"
         }
         set_cache(cache_key, result)
+        log_successful_search(symbol)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/search")
+def search_symbols(q: str = ""):
+    if not q:
+        return []
+    suggestions = get_symbol_suggestions(q)
+    return suggestions
 
 @app.get("/api/stock/{symbol}/chart")
 def get_chart(symbol: str, interval: str = "1d", period: str = "1y"):

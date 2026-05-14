@@ -34,10 +34,25 @@ function App() {
   const [error, setError] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>(TIMEFRAMES[3]); // 1D
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (!searchInput.trim()) {
+      setSearchSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/search?q=${searchInput}`);
+        if (res.ok) setSearchSuggestions(await res.json());
+      } catch (err) {}
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     localStorage.setItem('screener_watchlist', JSON.stringify(watchlist));
@@ -143,15 +158,43 @@ function App() {
 
               {!isHome && (
                 <div className="flex flex-gap-16 flex-align-center">
-                  <form className="nav-search" onSubmit={handleSearch}>
+                  <div className="nav-search" style={{ position: 'relative' }}>
                     <Search size={16} color="var(--text-muted)" />
                     <input 
                       type="text" 
-                      placeholder="Search for a company" 
+                      placeholder="Search company..." 
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
+                      onKeyDown={handleSearch}
                     />
-                  </form>
+                    {searchSuggestions.length > 0 && searchInput.trim() && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        background: 'var(--card-bg)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '0 0 8px 8px',
+                        zIndex: 100,
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      }}>
+                        {searchSuggestions.map(s => (
+                          <div 
+                            key={s}
+                            onClick={() => {
+                              fetchStockData(s);
+                            }}
+                            style={{ padding: '10px 16px', cursor: 'pointer', color: 'var(--text-main)', borderBottom: '1px solid var(--base)' }}
+                            onMouseEnter={(e) => (e.target as HTMLDivElement).style.background = 'var(--base)'}
+                            onMouseLeave={(e) => (e.target as HTMLDivElement).style.background = 'transparent'}
+                          >
+                            {s}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex flex-gap-8" style={{ margin: '4px' }}>
                     <a className="button" href="#">Login</a>
                     <a className="button button-secondary" href="#">Get free account</a>
