@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, TrendingUp, Download, Link as LinkIcon, Home, BarChart2, Briefcase, UserPlus, Moon, Sun } from 'lucide-react';
+import { Search, TrendingUp, Download, Link as LinkIcon, Home, BarChart2, Briefcase, UserPlus, Moon, Sun, Star, Clock } from 'lucide-react';
 import { createChart, ColorType, BarSeries, LineSeries, CandlestickSeries } from 'lightweight-charts';
 
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -13,6 +13,13 @@ function App() {
   const [financials, setFinancials] = useState<any>(null);
   const [peers, setPeers] = useState<any[]>([]);
   
+  const [watchlist, setWatchlist] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('screener_watchlist') || '[]'); } catch { return []; }
+  });
+  const [recentStocks, setRecentStocks] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('screener_recent') || '[]'); } catch { return []; }
+  });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -21,13 +28,29 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    localStorage.setItem('screener_watchlist', JSON.stringify(watchlist));
+  }, [watchlist]);
+
+  useEffect(() => {
+    localStorage.setItem('screener_recent', JSON.stringify(recentStocks));
+  }, [recentStocks]);
+
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   const fetchStockData = async (symbol: string) => {
     if (!symbol) return;
     setLoading(true);
     setError('');
-    setTicker(symbol.toUpperCase());
+    const upperSymbol = symbol.toUpperCase();
+    setTicker(upperSymbol);
+    
+    // Add to recently viewed
+    setRecentStocks(prev => {
+      const filtered = prev.filter(s => s !== upperSymbol);
+      return [upperSymbol, ...filtered].slice(0, 8); // Keep last 8
+    });
+
     try {
       const timestamp = Date.now();
       const summaryRes = await fetch(`${API_BASE_URL}/stock/${symbol}/summary?t=${timestamp}`);
