@@ -368,7 +368,7 @@ function FinancialTable({ data }: { data: any }) {
 // Lightweight Charts Component
 function LightweightChart({ data, theme }: { data: any[], theme: 'light' | 'dark' }) {
   const chartContainerRef = React.useRef<HTMLDivElement>(null);
-  const [chartType, setChartType] = React.useState<'line' | 'bar' | 'candlestick'>('bar');
+  const [chartType, setChartType] = React.useState<'line' | 'bar' | 'candlestick'>('line');
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
