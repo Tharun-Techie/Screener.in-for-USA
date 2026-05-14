@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, TrendingUp, Download, Link as LinkIcon, Home, BarChart2, Briefcase, UserPlus } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { createChart, ColorType } from 'lightweight-charts';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -224,17 +224,9 @@ function App() {
 
             <div className="card">
               <h2 className="card-title">Chart</h2>
-              <div style={{ height: '300px', width: '100%' }}>
+              <div style={{ width: '100%' }}>
                 {chartData.length > 0 ? (
-                  <ResponsiveContainer>
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="date" minTickGap={30} tick={{fontSize: 12}} />
-                      <YAxis domain={['auto', 'auto']} tick={{fontSize: 12}} orientation="right"/>
-                      <Tooltip />
-                      <Line type="monotone" dataKey="price" stroke="var(--primary-color)" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  <LightweightChart data={chartData} />
                 ) : (
                   <div>No chart data available</div>
                 )}
@@ -360,6 +352,63 @@ function FinancialTable({ data }: { data: any }) {
       </tbody>
     </table>
   );
+// Lightweight Charts Component
+function LightweightChart({ data }: { data: any[] }) {
+  const chartContainerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
+      }
+    };
+
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: 'transparent' },
+        textColor: '#333',
+      },
+      width: chartContainerRef.current.clientWidth,
+      height: 400,
+      grid: {
+        vertLines: { color: '#e0e0e0' },
+        horzLines: { color: '#e0e0e0' },
+      },
+      timeScale: {
+        borderColor: '#cccccc',
+      },
+      rightPriceScale: {
+        borderColor: '#cccccc',
+      },
+    });
+
+    const barSeries = chart.addBarSeries({
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+    });
+
+    // Ensure data is sorted by time and formatted correctly
+    const formattedData = data.map(d => ({
+      time: d.time,
+      open: d.open,
+      high: d.high,
+      low: d.low,
+      close: d.close,
+    })).sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+
+    barSeries.setData(formattedData);
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.remove();
+    };
+  }, [data]);
+
+  return <div ref={chartContainerRef} style={{ width: '100%', height: '400px' }} />;
 }
 
 export default App;
