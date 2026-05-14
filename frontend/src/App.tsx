@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, TrendingUp, Download, Link as LinkIcon, Home, BarChart2, Briefcase, UserPlus } from 'lucide-react';
-import { createChart, ColorType } from 'lightweight-charts';
+import { createChart, ColorType, BarSeries } from 'lightweight-charts';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -386,7 +386,7 @@ function LightweightChart({ data }: { data: any[] }) {
       },
     });
 
-    const barSeries = chart.addBarSeries({
+    const barSeries = chart.addSeries(BarSeries, {
       upColor: '#26a69a',
       downColor: '#ef5350',
     });
