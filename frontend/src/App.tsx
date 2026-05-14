@@ -110,10 +110,13 @@ function App() {
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchInput.trim()) {
-      fetchStockData(searchInput.trim().toUpperCase());
+  const handleSearch = (e: any) => {
+    if (e.type === 'submit' || e.key === 'Enter') {
+      e.preventDefault();
+      if (searchInput.trim()) {
+        fetchStockData(searchInput.trim().toUpperCase());
+        setSearchSuggestions([]);
+      }
     }
   };
 
@@ -225,21 +228,53 @@ function App() {
             </p>
 
             <div style={{ marginTop: '3%' }}>
-              <form className="home-search" style={{ marginBottom: '1.5rem' }} onSubmit={handleSearch}>
-                <i className="addon">
-                  <Search size={24} />
-                </i>
-                <input 
-                  aria-label="Search for a company" 
-                  type="search" 
-                  autoComplete="off" 
-                  spellCheck="false" 
-                  placeholder="Search for a company" 
-                  autoFocus 
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                />
-              </form>
+              <div style={{ position: 'relative', marginBottom: '1.5rem', width: '100%' }}>
+                <form className="home-search" onSubmit={handleSearch}>
+                  <i className="addon">
+                    <Search size={24} />
+                  </i>
+                  <input 
+                    aria-label="Search for a company" 
+                    type="search" 
+                    autoComplete="off" 
+                    spellCheck="false" 
+                    placeholder="Search for a company" 
+                    autoFocus 
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                  />
+                </form>
+                {searchSuggestions.length > 0 && searchInput.trim() && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'var(--card-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '0 0 8px 8px',
+                    zIndex: 100,
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    textAlign: 'left'
+                  }}>
+                    {searchSuggestions.map(s => (
+                      <div 
+                        key={s}
+                        onClick={() => {
+                          setSearchInput('');
+                          setSearchSuggestions([]);
+                          fetchStockData(s);
+                        }}
+                        style={{ padding: '16px', cursor: 'pointer', color: 'var(--text-main)', borderBottom: '1px solid var(--base)', fontSize: '1.2rem' }}
+                        onMouseEnter={(e) => (e.target as HTMLDivElement).style.background = 'var(--base)'}
+                        onMouseLeave={(e) => (e.target as HTMLDivElement).style.background = 'transparent'}
+                      >
+                        {s}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               
               {error && (
                  <div style={{ color: 'red', marginBottom: '15px' }}>{error}</div>
