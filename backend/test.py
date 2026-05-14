@@ -3,24 +3,24 @@ from fastapi import HTTPException
 
 try:
     print("Testing Summary")
-    print(get_summary("AAPL"))
+    print(get_summary("MSFT"))
 except HTTPException as e:
     print("Summary Exception:", repr(e))
 
 try:
     print("Testing Chart")
-    print(len(get_chart("AAPL")))
+    print(len(get_chart("MSFT")))
 except HTTPException as e:
     print("Chart Exception:", repr(e))
 
 try:
     print("Testing Financials")
-    print("Financial keys:", get_financials("AAPL").keys())
+    print("Financial keys:", get_financials("MSFT").keys())
 except HTTPException as e:
     print("Financials Exception:", repr(e))
 
 try:
     print("Testing Peers")
-    print("Peers count:", len(get_peers("AAPL")))
+    print("Peers count:", len(get_peers("MSFT")))
 except HTTPException as e:
     print("Peers Exception:", repr(e))
