@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, TrendingUp, Download, Link as LinkIcon, Home, BarChart2, Briefcase, UserPlus } from 'lucide-react';
+import { Search, TrendingUp, Download, Link as LinkIcon, Home, BarChart2, Briefcase, UserPlus, Moon, Sun } from 'lucide-react';
 import { createChart, ColorType, BarSeries, LineSeries, CandlestickSeries } from 'lightweight-charts';
 
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -15,6 +15,13 @@ function App() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   const fetchStockData = async (symbol: string) => {
     if (!symbol) return;
@@ -80,10 +87,13 @@ function App() {
                   <TrendingUp color="var(--primary-color)" /> Screener Clone
                 </a>
 
-                <div className="desktop-links">
+                <div className="desktop-links" style={{ display: 'flex', alignItems: 'center' }}>
                   <a href="/" onClick={goHome}>Home</a>
                   <a href="#">Screens</a>
                   <button className="button-plain">Tools ▾</button>
+                  <button className="button-plain" onClick={toggleTheme} title="Toggle Theme" style={{ display: 'flex', alignItems: 'center', marginLeft: '10px' }}>
+                    {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                  </button>
                 </div>
               </div>
 
@@ -226,7 +236,7 @@ function App() {
               <h2 className="card-title">Chart</h2>
               <div style={{ width: '100%' }}>
                 {chartData.length > 0 ? (
-                  <LightweightChart data={chartData} />
+                  <LightweightChart data={chartData} theme={theme} />
                 ) : (
                   <div>No chart data available</div>
                 )}
@@ -355,7 +365,7 @@ function FinancialTable({ data }: { data: any }) {
 }
 
 // Lightweight Charts Component
-function LightweightChart({ data }: { data: any[] }) {
+function LightweightChart({ data, theme }: { data: any[], theme: 'light' | 'dark' }) {
   const chartContainerRef = React.useRef<HTMLDivElement>(null);
   const [chartType, setChartType] = React.useState<'line' | 'bar' | 'candlestick'>('bar');
 
@@ -371,19 +381,19 @@ function LightweightChart({ data }: { data: any[] }) {
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#333',
+        textColor: theme === 'dark' ? '#e5e7eb' : '#333',
       },
       width: chartContainerRef.current.clientWidth,
       height: 400,
       grid: {
-        vertLines: { color: '#e0e0e0' },
-        horzLines: { color: '#e0e0e0' },
+        vertLines: { color: theme === 'dark' ? '#333333' : '#e0e0e0' },
+        horzLines: { color: theme === 'dark' ? '#333333' : '#e0e0e0' },
       },
       timeScale: {
-        borderColor: '#cccccc',
+        borderColor: theme === 'dark' ? '#444' : '#cccccc',
       },
       rightPriceScale: {
-        borderColor: '#cccccc',
+        borderColor: theme === 'dark' ? '#444' : '#cccccc',
       },
     });
 

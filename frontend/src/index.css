@@ -23,6 +23,18 @@
   --letter-spacing-13: 0.02em;
 }
 
+[data-theme="dark"] {
+  --primary-color: #3b82f6;
+  --bg-color: #121212;
+  --card-bg: #1e1e1e;
+  --border-color: #333333;
+  --text-main: #e5e7eb;
+  --text-muted: #9ca3af;
+  --ink-600: #d1d5db;
+  --base: #2a2a2a;
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -53,7 +65,7 @@ body {
   padding: 8px 16px;
   border-radius: 4px;
   border: 1px solid var(--border-color);
-  background: white;
+  background: var(--card-bg);
   cursor: pointer;
   text-decoration: none;
   color: var(--text-main);
@@ -61,7 +73,7 @@ body {
 }
 .button-primary {
   background: var(--primary-color);
-  color: white;
+  color: #ffffff;
   border-color: var(--primary-color);
 }
 .button-secondary {
@@ -76,7 +88,7 @@ body {
 
 /* Header */
 .top-nav-holder {
-  background: white;
+  background: var(--card-bg);
   border-bottom: 1px solid var(--border-color);
   padding: 0;
 }
@@ -134,6 +146,8 @@ body {
   border-radius: 8px;
   box-sizing: border-box;
   outline: none;
+  background: var(--card-bg);
+  color: var(--text-main);
 }
 .home-search input:focus {
   border-color: var(--primary-color);
@@ -171,7 +185,7 @@ body {
 .nav-search {
   display: flex;
   align-items: center;
-  background: #f3f4f6;
+  background: var(--base);
   border-radius: 6px;
   padding: 6px 12px;
   width: 300px;
@@ -179,7 +193,7 @@ body {
 }
 .nav-search:focus-within {
   border-color: var(--primary-color);
-  background: white;
+  background: var(--card-bg);
 }
 .nav-search input {
   background: transparent;
@@ -188,6 +202,7 @@ body {
   width: 100%;
   padding-left: 8px;
   font-size: 14px;
+  color: var(--text-main);
 }
 
 /* Main Content */
@@ -290,7 +305,7 @@ tr:hover td {
 footer {
   margin-top: 60px;
   padding: 40px 0;
-  background: white;
+  background: var(--card-bg);
   border-top: 1px solid var(--border-color);
   color: var(--text-muted);
   font-size: 14px;
