@@ -25,22 +25,32 @@ def get_ticker(symbol: str):
 def get_summary(symbol: str):
     cache_key = f"summary_{symbol}"
     cached_data = get_cached(cache_key)
+    
+    live_price = None
+    market_cap = None
+    try:
+        ticker = get_ticker(symbol)
+        info = ticker.fast_info
+        live_price = getattr(info, 'last_price', None)
+        market_cap = getattr(info, 'market_cap', None)
+    except:
+        pass
+        
     if cached_data:
+        if live_price:
+            cached_data["currentPrice"] = live_price
+            cached_data["marketCap"] = market_cap
+            set_cache(cache_key, cached_data)
         return cached_data
 
     try:
-        ticker = get_ticker(symbol)
-        
-        # Use fast_info to avoid Yahoo Finance rate limits which cause hanging
-        info = ticker.fast_info
-        
         result = {
             "name": symbol,
             "symbol": symbol,
-            "currentPrice": getattr(info, 'last_price', None),
-            "marketCap": getattr(info, 'market_cap', None),
-            "high52Week": getattr(info, 'year_high', None),
-            "low52Week": getattr(info, 'year_low', None),
+            "currentPrice": live_price,
+            "marketCap": market_cap,
+            "high52Week": getattr(info, 'year_high', None) if live_price else None,
+            "low52Week": getattr(info, 'year_low', None) if live_price else None,
             "peRatio": 30.5, # Mock fallback for missing data
             "bookValue": 45.2,
             "dividendYield": 0.005,
@@ -58,41 +68,89 @@ def get_summary(symbol: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/stock/{symbol}/chart")
-def get_chart(symbol: str, period: str = "1y"):
-    cache_key = f"chart_{symbol}_{period}"
+def get_chart(symbol: str, interval: str = "1d", period: str = "1y"):
+    cache_key = f"chart_{symbol}_{interval}_{period}"
     cached_data = get_cached(cache_key)
-    if cached_data:
-        return cached_data
 
     try:
         ticker = get_ticker(symbol)
-        hist = ticker.history(period=period)
+        
+        hist = pd.DataFrame()
+        if cached_data and len(cached_data) > 0:
+            last_time = cached_data[-1]['time']
+            if isinstance(last_time, int):
+                import datetime
+                start_date = datetime.datetime.fromtimestamp(last_time).strftime('%Y-%m-%d')
+            else:
+                start_date = last_time
+
+            try:
+                if interval == "4h":
+                    hist = ticker.history(start=start_date, interval="1h")
+                    if not hist.empty:
+                        hist = hist.resample('4h').agg({
+                            'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'
+                        }).dropna()
+                else:
+                    hist = ticker.history(start=start_date, interval=interval)
+            except:
+                hist = pd.DataFrame()
+        else:
+            if interval == "4h":
+                hist = ticker.history(period=period, interval="1h")
+                if not hist.empty:
+                    hist = hist.resample('4h').agg({
+                        'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'
+                    }).dropna()
+            else:
+                hist = ticker.history(period=period, interval=interval)
+            
+        if hist.empty and cached_data:
+            return cached_data
         if hist.empty:
             return []
         
-        # Format for Recharts: [{date: 'YYYY-MM-DD', price: 150.0}]
         hist = hist.reset_index()
-        # Ensure Date column exists
         if 'Date' in hist.columns:
             date_col = 'Date'
         elif 'Datetime' in hist.columns:
             date_col = 'Datetime'
         else:
-            return []
+            return cached_data if cached_data else []
 
-        hist['formatted_date'] = hist[date_col].dt.strftime('%Y-%m-%d')
-        chart_data = []
+        is_intraday = interval in ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "4h"]
+        
+        new_data = []
         for _, row in hist.iterrows():
-            chart_data.append({
-                "time": row['formatted_date'], # lightweight-charts uses 'time'
+            if pd.isna(row['Close']):
+                continue
+                
+            time_val = int(row[date_col].timestamp()) if is_intraday else row[date_col].strftime('%Y-%m-%d')
+            
+            new_data.append({
+                "time": time_val,
                 "open": round(row['Open'], 2),
                 "high": round(row['High'], 2),
                 "low": round(row['Low'], 2),
                 "close": round(row['Close'], 2),
-                "value": round(row['Close'], 2) # keep value for fallback
+                "value": round(row['Close'], 2)
             })
-        set_cache(cache_key, chart_data)
-        return chart_data
+
+        if cached_data:
+            # Merge new_data into cached_data
+            data_map = {item['time']: item for item in cached_data}
+            for item in new_data:
+                data_map[item['time']] = item
+            
+            merged_data = list(data_map.values())
+            merged_data.sort(key=lambda x: x['time'])
+            
+            set_cache(cache_key, merged_data)
+            return merged_data
+        else:
+            set_cache(cache_key, new_data)
+            return new_data
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

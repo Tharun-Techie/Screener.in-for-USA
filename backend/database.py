@@ -23,14 +23,13 @@ def get_cached(key):
     try:
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
-        c.execute('SELECT data, timestamp FROM cache WHERE key = ?', (key,))
+        c.execute('SELECT data FROM cache WHERE key = ?', (key,))
         row = c.fetchone()
         conn.close()
         
         if row:
-            data_str, timestamp = row
-            if time.time() - timestamp < CACHE_EXPIRY:
-                return json.loads(data_str)
+            data_str = row[0]
+            return json.loads(data_str)
     except Exception as e:
         print(f"Cache read error: {e}")
     return None

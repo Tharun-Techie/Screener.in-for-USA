@@ -4,6 +4,16 @@ import { createChart, ColorType, BarSeries, LineSeries, CandlestickSeries } from
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
+type Timeframe = { label: string; interval: string; period: string };
+const TIMEFRAMES: Timeframe[] = [
+  { label: '15m', interval: '15m', period: '5d' },
+  { label: '1H', interval: '1h', period: '1mo' },
+  { label: '4H', interval: '4h', period: '1mo' },
+  { label: '1D', interval: '1d', period: '1y' },
+  { label: '1W', interval: '1wk', period: '5y' },
+  { label: '1M', interval: '1mo', period: '10y' },
+];
+
 function App() {
   const [ticker, setTicker] = useState<string>('');
   const [searchInput, setSearchInput] = useState('');
@@ -23,6 +33,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>(TIMEFRAMES[3]); // 1D
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -37,6 +48,16 @@ function App() {
   }, [recentStocks]);
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
+  const fetchChartData = async (sym: string, tf: Timeframe) => {
+    try {
+      const timestamp = Date.now();
+      const chartRes = await fetch(`${API_BASE_URL}/stock/${sym}/chart?interval=${tf.interval}&period=${tf.period}&t=${timestamp}`);
+      if (chartRes.ok) setChartData(await chartRes.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchStockData = async (symbol: string) => {
     if (!symbol) return;
@@ -58,8 +79,7 @@ function App() {
       const summaryData = await summaryRes.json();
       setSummary(summaryData);
 
-      const chartRes = await fetch(`${API_BASE_URL}/stock/${symbol}/chart?t=${timestamp}`);
-      if (chartRes.ok) setChartData(await chartRes.json());
+      await fetchChartData(symbol, selectedTimeframe);
 
       const finRes = await fetch(`${API_BASE_URL}/stock/${symbol}/financials?t=${timestamp}`);
       if (finRes.ok) setFinancials(await finRes.json());
@@ -255,9 +275,26 @@ function App() {
                 </div>
               </div>
             </div>
-
+            {/* Chart section */}
             <div className="card">
-              <h2 className="card-title">Chart</h2>
+              <div className="flex-space-between flex-align-center" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '16px' }}>
+                <h2 className="card-title" style={{ borderBottom: 'none', margin: 0, paddingBottom: 0 }}>Chart</h2>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {TIMEFRAMES.map(tf => (
+                    <button
+                      key={tf.label}
+                      className={`button ${selectedTimeframe.label === tf.label ? 'button-primary' : 'button-secondary'}`}
+                      style={{ padding: '4px 10px', fontSize: '12px' }}
+                      onClick={() => {
+                        setSelectedTimeframe(tf);
+                        fetchChartData(ticker, tf);
+                      }}
+                    >
+                      {tf.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div style={{ width: '100%' }}>
                 {chartData.length > 0 ? (
                   <LightweightChart data={chartData} theme={theme} />
@@ -450,7 +487,11 @@ function LightweightChart({ data, theme }: { data: any[], theme: 'light' | 'dark
         low: d.low !== undefined ? d.low : d.price,
         close: d.close !== undefined ? d.close : d.price,
       };
-    }).sort((a, b) => new Date(a.time as string).getTime() - new Date(b.time as string).getTime());
+    }).sort((a, b) => {
+      const aTime = typeof a.time === 'number' ? a.time : new Date(a.time as string).getTime();
+      const bTime = typeof b.time === 'number' ? b.time : new Date(b.time as string).getTime();
+      return aTime - bTime;
+    });
 
     series.setData(formattedData);
 
